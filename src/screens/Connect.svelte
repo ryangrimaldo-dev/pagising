@@ -5,22 +5,38 @@
   import Icon from '../components/Icon.svelte';
   import { settings, reducedMotion } from '../lib/stores.js';
   import { navigate } from '../lib/router.js';
-  import { connectBand, buzz, buzzing } from '../lib/sim.js';
+  import { connectBand, buzz, buzzing, hwAvailable } from '../lib/sim.js';
 
-  let phase = $state('searching'); // searching | notfound | connected
+  // choose (real wristband available) | searching | notfound | connected
+  let phase = $state(hwAvailable ? 'choose' : 'searching');
+  let errorMsg = $state('');
+
+  function useReal() {
+    settings.update((s) => ({ ...s, hw: true }));
+    connect();
+  }
+  function useDemo() {
+    settings.update((s) => ({ ...s, hw: false }));
+    connect();
+  }
   let noCount = $state(0);
 
   async function connect() {
     phase = 'searching';
     try {
+      errorMsg = '';
       await connectBand();
       phase = 'connected';
       buzz('stop10', 'Test buzz sent to your wristband');
-    } catch {
+    } catch (e) {
+      errorMsg = $settings.hw ? e?.message ?? '' : '';
       phase = 'notfound';
     }
   }
-  onMount(connect);
+  // The Bluetooth picker needs a tap, so only demo mode connects by itself.
+  onMount(() => {
+    if (!hwAvailable) connect();
+  });
 
   function again() {
     noCount++;
@@ -43,7 +59,13 @@
     {/if}
   </div>
 
-  {#if phase === 'notfound'}
+  {#if phase === 'choose'}
+    <div class="card stack-sm" in:fly={{ y: 8, duration: d }}>
+      <button class="btn btn-primary btn-lg" onclick={useReal}>Connect my wristband</button>
+      <button class="btn" onclick={useDemo}>Try the demo instead</button>
+      <p class="small muted">The demo acts out the wristband so you can try the app without it.</p>
+    </div>
+  {:else if phase === 'notfound'}
     <div class="banner danger" role="alert" in:fly={{ y: 8, duration: d }}>
       <Icon name="alert" size={26} />
       <div class="grow">
@@ -52,10 +74,13 @@
           <li>Is it charged? Hold the side button for 3 seconds.</li>
           <li>Is Bluetooth on?</li>
           <li>Keep it within arm’s reach.</li>
+          {#if $settings.hw}<li>On iPhone, open this app in the Bluefy browser.</li>{/if}
         </ul>
+        {#if errorMsg}<p class="small">{errorMsg}</p>{/if}
       </div>
     </div>
     <button class="btn btn-primary btn-lg" onclick={connect}>Try again</button>
+    {#if hwAvailable && $settings.hw}<button class="link center" onclick={useDemo}>Use the demo instead</button>{/if}
   {:else if phase === 'connected'}
     <div class="banner ok" role="status" in:fly={{ y: 8, duration: d }}>
       <Icon name="checkCircle" size={30} />

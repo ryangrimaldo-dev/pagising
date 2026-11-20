@@ -9,9 +9,11 @@
 
   let { params } = $props();
   const tag = $derived($tags.find((x) => x.id === params.id));
+  // 'left' = the user walked away from it; 'theft' = it moved away while the user stayed put
+  const left = $derived($alert?.type === 'left');
 
   $effect(() => {
-    if (!tag && get(alert)?.type === 'theft') alert.set(null);
+    if (!tag && ['theft', 'left'].includes(get(alert)?.type)) alert.set(null);
   });
 
   function haveIt() {
@@ -28,14 +30,14 @@
 {#if tag}
   <div class="alert-screen" role="alertdialog" aria-labelledby="ta-title" aria-describedby="ta-desc">
     <div class="inner">
-      <span class="badge">Possible theft</span>
+      <span class="badge">{left ? 'Left behind' : 'Possible theft'}</span>
       <div class="ring"><Mascot mood="alert" size={96} interactive={false} /></div>
-      <h1 id="ta-title">Your {tag.name} may be taken</h1>
-      <p class="sub" id="ta-desc">It moved away while you were seated.</p>
+      <h1 id="ta-title">{left ? `Did you leave your ${tag.name}?` : `Your ${tag.name} may be taken`}</h1>
+      <p class="sub" id="ta-desc">{left ? 'You walked away and the tag stayed behind.' : 'It moved away while you were seated.'}</p>
       <div class="map-wrap">
         <MapView variant="pin" tone="danger" height={150} label="Last seen {fmtTime(tag.lostAt ?? Date.now())} · {tag.lastPlace ?? 'nearby'}" />
       </div>
-      <p class="felt">You felt: <strong>rapid buzzing</strong> = possible theft</p>
+      <p class="felt">You felt: {#if left}<strong>three long buzzes</strong> = left behind{:else}<strong>rapid buzzing</strong> = possible theft{/if}</p>
       <div class="bottom">
         <button class="btn btn-primary btn-lg" onclick={haveIt}>I have it</button>
         <button class="link center" onclick={viewLocation}>View last location</button>

@@ -31,7 +31,8 @@ export const DEFAULT_SETTINGS = {
   band: { connected: false, battery: 82, posture: 'Sitting' },
   strength: 60,
   alertMins: [10, 5, 1],
-  failNextPairing: false
+  failNextPairing: false,
+  hw: false // true = real wristband over Bluetooth + GPS (see sim.js)
 };
 
 export const settings = persisted('settings', DEFAULT_SETTINGS);

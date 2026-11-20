@@ -8,7 +8,7 @@
   import Icon from '../components/Icon.svelte';
   import { settings, tags, toast, addLog, reducedMotion } from '../lib/stores.js';
   import { navigate } from '../lib/router.js';
-  import { scanTags } from '../lib/sim.js';
+  import { scanTags, registerTag } from '../lib/sim.js';
   import { TAG_KINDS } from '../lib/mock.js';
   import { uid } from '../lib/format.js';
 
@@ -34,7 +34,12 @@
     scanning = true;
     selected = null;
     devices = [];
-    const found = await scanTags();
+    let found = [];
+    try {
+      found = await scanTags();
+    } catch (e) {
+      toast(e?.message ?? 'Scan failed', 'danger');
+    }
     devices = found.sort((a, b) => b.signal - a.signal);
     selected = devices[0]?.id ?? null;
     scanning = false;
@@ -44,8 +49,9 @@
   function add() {
     const dev = devices.find((x) => x.id === selected);
     if (!dev || !name) return;
-    const tag = { id: uid(), name, kind, base: dev.signal, signal: dev.signal, lost: false, lostAt: null, distance: 'normal' };
+    const tag = { id: uid(), name, kind, base: dev.signal, signal: dev.signal, lost: false, lostAt: null, distance: 'normal', bleId: dev.bleId ?? null };
     tags.update((l) => [...l, tag]);
+    registerTag(tag);
     addLog({ type: 'alert', title: `${name} tag added`, detail: 'Paired with your wristband' });
     added = [...added, tag];
     devices = devices.filter((x) => x.id !== selected);

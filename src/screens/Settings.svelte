@@ -8,7 +8,7 @@
   import AlertsDialog from '../components/AlertsDialog.svelte';
   import { settings, tags, routes, trip, toast, addLog, resetAll, reducedMotion } from '../lib/stores.js';
   import { navigate } from '../lib/router.js';
-  import { connectBand, buzz, triggerTheft } from '../lib/sim.js';
+  import { connectBand, disconnectBand, buzz, triggerTheft, hwAvailable } from '../lib/sim.js';
   import { fmtList, fmtDur } from '../lib/format.js';
   import { t } from '../lib/i18n.js';
 
@@ -22,7 +22,7 @@
 
   async function toggleBand() {
     if (band.connected) {
-      setBand({ connected: false });
+      disconnectBand();
       buzz('lost', 'Wristband disconnected');
       addLog({ type: 'alert', title: 'Wristband disconnected', detail: 'You disconnected it in Settings' });
       return;
@@ -114,6 +114,15 @@
     value={$settings.lang}
     onchange={(v) => set({ lang: v })}
     options={[{ id: 'en', label: 'English' }, { id: 'fil', label: 'Filipino' }]} />
+
+  <h2 class="section-label">Wristband mode</h2>
+  <div class="list">
+    <label class="row check">
+      <Icon name="bluetooth" />
+      <span class="grow"><strong>Use the real wristband</strong><span class="small muted">{hwAvailable ? 'Bluetooth and GPS instead of the demo' : 'Needs Bluetooth. On iPhone, open this app in Bluefy'}</span></span>
+      <input type="checkbox" disabled={!hwAvailable} checked={!!$settings.hw} onchange={(e) => { disconnectBand(); set({ hw: e.currentTarget.checked }); }} />
+    </label>
+  </div>
 
   <h2 class="section-label">Try it out</h2>
   <p class="small muted">These buttons act out events that would come from the wristband.</p>

@@ -73,7 +73,7 @@
     <Segmented labelledby="dist-l" value={tag.distance} onchange={(v) => update({ distance: v })} options={DIST} />
     <p class="small muted">{DIST.find((x) => x.id === tag.distance)?.hint}</p>
 
-    <button class="btn btn-primary btn-lg" onclick={() => toast(`Maps would open at ${place} (simulated)`)}>Open in Maps</button>
+    <button class="btn btn-primary btn-lg" onclick={() => (tag.lost && tag.lastLat != null ? window.open(`https://www.google.com/maps?q=${tag.lastLat},${tag.lastLng}`, '_blank') : toast(`Maps would open at ${place} (simulated)`))}>Open in Maps</button>
 
     <div class="bottom">
       <button class="text-btn danger" onclick={() => (removeOpen = true)}>Remove tag</button>

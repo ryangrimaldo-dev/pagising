@@ -16,7 +16,7 @@
   onMount(() => {
     const iv = setInterval(() => {
       const x = get(alert);
-      if (x?.type === 'stop' && x.stage === x.total) buzz('stop1', 'Wristband: buzzing until you tap');
+      if (x?.type === 'stop' && x.stage === x.total) buzz('stop1', 'Wristband: buzzing until you tap', { send: false });
     }, 2500);
     return () => clearInterval(iv);
   });

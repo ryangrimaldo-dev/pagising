@@ -12,7 +12,7 @@
   const tr = $derived($trip);
   const mins = $derived(tr ? Math.ceil(tr.remainingSec / 60) : 0);
   const progress = $derived(tr ? 1 - tr.remainingSec / tr.totalSec : 0);
-  const km = $derived(tr ? ((tr.km * tr.remainingSec) / tr.totalSec).toFixed(1) : 0);
+  const km = $derived(tr ? (tr.kmLeft ?? (tr.km * tr.remainingSec) / tr.totalSec).toFixed(1) : 0);
   const eta = $derived(tr ? fmtTime(Date.now() + tr.remainingSec * 1000) : '');
   const lostCount = $derived($tags.filter((x) => statusOf(x) === 'out').length);
   let endOpen = $state(false);
