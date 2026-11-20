@@ -15,7 +15,8 @@ export const STOP_COORDS = {
   'quiapo-jeep': [14.5988, 120.984],
   'up-diliman': [14.6537, 121.0687],
   'monumento-bw': [14.6573, 120.984],
-  pitx: [14.5097, 120.9921]
+  pitx: [14.5097, 120.9921],
+  lucena: [13.9441, 121.6213]
 };
 
 // Typical door-to-door speeds in Metro Manila traffic (km/h), used when the
@@ -85,6 +86,22 @@ export function startWatch(onUpdate, onError) {
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
   );
+}
+
+// One quick position (for the stop picker), without starting a trip.
+export function locateOnce() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, at: pos.timestamp, acc: pos.coords.accuracy };
+        if (watchId == null) { last = p; position.set(p); }
+        resolve(p);
+      },
+      () => resolve(null),
+      { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 }
+    );
+  });
 }
 
 export function stopWatch() {
