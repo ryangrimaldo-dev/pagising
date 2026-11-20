@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Icon from '../components/Icon.svelte';
   import MapView from '../components/MapView.svelte';
+  import LiveMap from '../components/LiveMap.svelte';
   import Dialog from '../components/Dialog.svelte';
   import { trip, tags, settings, statusOf } from '../lib/stores.js';
   import { navigate } from '../lib/router.js';
@@ -11,6 +12,7 @@
 
   const tr = $derived($trip);
   const mins = $derived(tr ? Math.ceil(tr.remainingSec / 60) : 0);
+  const timeLeft = $derived(mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins} min`);
   const progress = $derived(tr ? 1 - tr.remainingSec / tr.totalSec : 0);
   const km = $derived(tr ? (tr.kmLeft ?? (tr.km * tr.remainingSec) / tr.totalSec).toFixed(1) : 0);
   const eta = $derived(tr ? fmtTime(Date.now() + tr.remainingSec * 1000) : '');
@@ -29,7 +31,7 @@
   <section class="screen">
     <header class="trip-top">
       <button class="icon-btn" onclick={() => navigate('/')} aria-label="Back to home. The trip keeps running"><Icon name="chevronLeft" size={26} /></button>
-      <span class="small muted">Trip keeps running if you leave this screen</span>
+      <span class="small muted">You can open other screens. Your trip keeps running.</span>
     </header>
     {#if lostCount}
       <p class="banner danger slim"><Icon name="alert" size={20} /> <span><strong class="inline">{lostCount} tag out of range</strong></span></p>
@@ -41,7 +43,7 @@
 
     <div class="hero trip-hero">
       <div class="count">
-        <h1><span class="big" aria-live="polite">{mins} min</span> <span class="to">to {tr.stopName}</span></h1>
+        <h1><span class="big" aria-live="polite">{timeLeft}</span> <span class="to">to {tr.stopName}</span></h1>
         <p class="muted">{tr.line}</p>
       </div>
       <div class="frost-tiles">
@@ -51,7 +53,11 @@
       </div>
     </div>
 
-    <MapView variant="route" {progress} height={210} label="Map: you, your route and your stop" />
+    {#if tr.hw && tr.coords}
+      <LiveMap stop={tr.coords} stopName={tr.stopName} mode={tr.mode} height={260} />
+    {:else}
+      <MapView variant="route" {progress} height={210} label="Demo map: you, your route and your stop" />
+    {/if}
 
     <div class="card">
       <h2 class="small muted">{$t('Wake-up alerts')}</h2>
@@ -72,7 +78,7 @@
       <span class:awake={tr.awake} class="muted">{tr.awake ? 'Awake ✓' : 'Not yet awake'}</span>
     </div>
 
-    <p class="note"><Icon name="phone" size={20} /> Keep this screen on during your trip</p>
+    <p class="note"><Icon name="phone" size={20} /> <span>Don't lock your phone during the trip. If the phone screen turns off, the browser pauses and alerts may be late.</span></p>
 
     <div class="bottom">
       <button class="btn btn-lg btn-danger" onclick={() => (endOpen = true)}>{$t('End trip')}</button>

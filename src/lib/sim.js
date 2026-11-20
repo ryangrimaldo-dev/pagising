@@ -137,6 +137,7 @@ export function startTrip({ stop, mode, alertMins, minutes }) {
     const est = gps.estimate(coords, mode);
     if (est) totalSec = Math.max(60, est.remainingSec);
   }
+  const hasFix = !!(hw && coords && gps.lastPosition());
   const mins = [...alertMins].sort((a, b) => b - a);
   trip.set({
     stopId: stop.id,
@@ -152,11 +153,12 @@ export function startTrip({ stop, mode, alertMins, minutes }) {
     startedAt: Date.now(),
     theftChecked: false,
     hw,
-    coords
+    coords,
+    fixed: hasFix
   });
   if (hw) {
     band.send('TRIP:START');
-    gps.startWatch(null, () => toast('GPS is off. Using the expected trip time instead.'));
+    gps.startWatch(() => gps.refreshRoute(coords), () => toast('GPS is off. Using the expected trip time instead.'));
   }
   addLog({ type: 'trip', title: `Trip started to ${stop.name}`, detail: `${mode} · alerts at ${fmtList(mins)} min` });
   navigate('/trip');
@@ -295,7 +297,17 @@ function hwTick(t) {
   const est = t.coords ? gps.estimate(t.coords, t.mode) : null;
   const elapsed = (Date.now() - t.startedAt) / 1000;
   const remaining = est ? est.remainingSec : Math.max(0, Math.round(t.totalSec - elapsed));
-  const next = { ...t, remainingSec: Math.min(remaining, t.totalSec), kmLeft: est ? est.km : null };
+  const next = { ...t, remainingSec: remaining, kmLeft: est ? est.km : null };
+  if (est && !t.fixed) {
+    // First GPS fix: replace the guessed trip time with the real estimate,
+    // and skip only the stages that are already past.
+    next.fixed = true;
+    next.totalSec = Math.max(60, remaining);
+    next.fired = t.alertMins.filter((m) => m * 60 >= remaining).length;
+    trip.set(next);
+    return;
+  }
+  next.totalSec = Math.max(t.totalSec, remaining);
   const m = t.alertMins[t.fired];
   if (m !== undefined && next.remainingSec <= m * 60) {
     next.fired = t.fired + 1;
