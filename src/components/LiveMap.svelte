@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
-  import { position, route } from '../lib/gps.js';
+  import { position, route, gpsError } from '../lib/gps.js';
 
   let { stop, stopName = 'Stop', mode = 'Bus', height = 260 } = $props();
 
@@ -91,7 +91,7 @@
 <div class="wrap" style="height:{height}px">
   <div class="map" bind:this={el} role="application" aria-label="Map of your position, your route and {stopName}"></div>
   {#if !$position}
-    <span class="chip">Finding your location…</span>
+    <span class="chip">{$gpsError || 'Finding your location…'}</span>
   {:else if failed}
     <span class="chip">Map needs mobile data. Your trip and alerts still work.</span>
   {/if}

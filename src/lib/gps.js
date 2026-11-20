@@ -46,13 +46,17 @@ let speeds = [];            // recent speeds: { kmh, at }
 
 export const lastPosition = () => last;
 export const position = writable(null);   // live position for the map
+export const gpsError = writable('');     // why there's no position (shown on the map)
+export const isWatching = () => watchId != null;
 export const route = writable(null);      // { line: [[lat,lng]...], km, sec, straightKm, at, to }
 
 export function startWatch(onUpdate, onError) {
   if (!navigator.geolocation) {
+    gpsError.set('This browser has no location access.');
     onError?.(new Error('No GPS on this device'));
     return;
   }
+  gpsError.set('');
   stopWatch();
   speeds = [];
   watchId = navigator.geolocation.watchPosition(
@@ -66,9 +70,19 @@ export function startWatch(onUpdate, onError) {
       if (kmh != null && kmh < 150) speeds = [...speeds, { kmh, at: p.at }].filter((s) => p.at - s.at < 120000);
       last = p;
       position.set(p);
+      gpsError.set('');
       onUpdate?.(p);
     },
-    (err) => onError?.(err),
+    (err) => {
+      gpsError.set(
+        err.code === 1
+          ? 'Location is blocked. Allow location for this site in your browser settings, then reload.'
+          : err.code === 3
+            ? 'Still looking for GPS. Go near a window or outside.'
+            : 'Location is unavailable. Turn on Location Services on your device.'
+      );
+      onError?.(err);
+    },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
   );
 }

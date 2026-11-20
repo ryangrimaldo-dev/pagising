@@ -446,6 +446,9 @@ export function startSim() {
   if (started) return;
   started = true;
   if (hwOn()) setBand({ connected: false }); // a page reload drops the Bluetooth link
+  // A page reload also stops GPS: restart it for a trip that is still running.
+  const running = get(trip);
+  if (running?.hw && running.coords && !gps.isWatching()) gps.startWatch(() => gps.refreshRoute(running.coords));
   band.on('event', onBandEvent);
   band.on('status', onBandStatus);
   band.on('disconnect', onBandDisconnect);
